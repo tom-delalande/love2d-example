@@ -1,8 +1,12 @@
 local screenWidth = love.graphics.getWidth()
 local screenHeight = love.graphics.getHeight()
+local startTime = love.timer.getTime()
 
 local cardSprite
 local cardSound
+local crtShader
+
+local canvas
 
 local deck = {
     cards = {},
@@ -78,6 +82,8 @@ end
 function love.load()
     cardSprite = love.graphics.newImage("card.png")
     cardSound = love.audio.newSource("card.ogg", "static")
+    crtShader = love.graphics.newShader("crt.glsl")
+    canvas = love.graphics.newCanvas(screenWidth, screenHeight, { type = '2d', readable = true })
 
     for _ = 1, 52 do
         local card = new_card()
@@ -87,6 +93,7 @@ function love.load()
 end
 
 function love.draw()
+    love.graphics.setCanvas(canvas)
     love.graphics.clear(0.937, 0.945, 0.96, 1)
     love.graphics.setColor(0.015, 0.647, 0.898, 1)
     love.graphics.circle(
@@ -104,6 +111,13 @@ function love.draw()
             love.graphics.draw(cardSprite, card.transform.x, card.transform.y)
         end
     end
+
+    love.graphics.setCanvas()
+    love.graphics.setColor({ 1, 1, 1 })
+    crtShader:send('millis', love.timer.getTime() - startTime)
+    love.graphics.setShader(crtShader)
+    love.graphics.draw(canvas, 0, 0)
+    love.graphics.setShader()
 end
 
 function love.mousepressed(x, y)
