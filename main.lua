@@ -28,6 +28,7 @@ end
 
 local function move(card, dt)
     local momentum = 0.75
+    local max_velocity = 10
     if (card.target_transform.x ~= card.transform.x or card.velocity.x ~= 0) or
         (card.target_transform.y ~= card.transform.y or card.velocity.y ~= 0) then
         card.velocity.x = momentum * card.velocity.x +
@@ -36,6 +37,12 @@ local function move(card, dt)
             (1 - momentum) * (card.target_transform.y - card.transform.y) * 30 * dt
         card.transform.x = card.transform.x + card.velocity.x
         card.transform.y = card.transform.y + card.velocity.y
+
+        local velocity = math.sqrt(card.velocity.x ^ 2 + card.velocity.y ^ 2)
+        if velocity > max_velocity then
+            card.velocity.x = max_velocity * card.velocity.x / velocity
+            card.velocity.y = max_velocity * card.velocity.y / velocity
+        end
     end
 end
 
@@ -74,6 +81,14 @@ end
 
 function love.draw()
     love.graphics.clear(0.937, 0.945, 0.96, 1)
+    love.graphics.setColor(0.015, 0.647, 0.898, 1)
+    love.graphics.circle(
+        "fill",
+        deck.transform.x + deck.transform.width / 2,
+        deck.transform.y + deck.transform.height + 50,
+        15
+    )
+    love.graphics.setColor(1, 1, 1, 1)
     for _, card in ipairs(deck.cards) do
         love.graphics.draw(cardSprite, card.transform.x, card.transform.y)
     end
@@ -94,6 +109,17 @@ function love.mousepressed(x, y)
         then
             card.dragging = true
             break
+        end
+    end
+
+    if x > deck.transform.x + deck.transform.width / 2 - 15
+        and x < deck.transform.x + deck.transform.width / 2 + 15
+        and y > deck.transform.y + deck.transform.height + 50 - 15
+        and y < deck.transform.y + deck.transform.height + 50 + 15 then
+        for _, card in ipairs(cards) do
+            if not card.is_on_deck then
+                table.insert(deck.cards, card)
+            end
         end
     end
 end
