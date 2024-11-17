@@ -2,6 +2,7 @@ local screenWidth = love.graphics.getWidth()
 local screenHeight = love.graphics.getHeight()
 
 local cardSprite
+local cardSound
 
 local deck = {
     cards = {},
@@ -14,6 +15,7 @@ local deck = {
 }
 
 local cards = {}
+local sounds = {}
 
 local function align(deck)
     local deck_height = 10 / #deck.cards
@@ -69,8 +71,13 @@ local function new_card()
     }
 end
 
+local function queue_sound(sound, delay, pitch)
+    table.insert(sounds, { sound = sound, delay = delay, pitch = pitch })
+end
+
 function love.load()
     cardSprite = love.graphics.newImage("card.png")
+    cardSound = love.audio.newSource("card.ogg", "static")
 
     for _ = 1, 52 do
         local card = new_card()
@@ -116,8 +123,11 @@ function love.mousepressed(x, y)
         and x < deck.transform.x + deck.transform.width / 2 + 15
         and y > deck.transform.y + deck.transform.height + 50 - 15
         and y < deck.transform.y + deck.transform.height + 50 + 15 then
+        local count = 1
         for _, card in ipairs(cards) do
             if not card.is_on_deck then
+                queue_sound(cardSound, count * 0.05, 1 + count * 0.2)
+                count = count + 1
                 table.insert(deck.cards, card)
             end
         end
@@ -133,11 +143,23 @@ function love.update(delta_time)
         move(card, delta_time)
         align(deck)
     end
+
+    for position, sound in ipairs(sounds) do
+        if sound.delay <= 0 then
+            sound.sound:setPitch(sound.pitch)
+            love.audio.play(sound.sound)
+            table.remove(sounds, position)
+            sound.sound:setPitch(sound.pitch)
+        else
+            sound.delay = sound.delay - delta_time
+        end
+    end
 end
 
 function love.mousereleased()
     for position, card in ipairs(deck.cards) do
         if card.dragging == true then
+            love.audio.play(cardSound)
             card.dragging = false
             card.is_on_deck = false
             table.remove(deck.cards, position)
